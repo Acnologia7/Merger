@@ -1,34 +1,12 @@
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
-
 from app.services.data import DataService
 from app.core.db import get_session
 from app.core.config import get_settings
+import logging
 
-
-# async def setup_scheduler(loop: asyncio.AbstractEventLoop):
-#     settings = get_settings()
-#     scheduler = AsyncIOScheduler(event_loop=loop)
-#     session_gen = get_session()
-#     session = await anext(session_gen)
-
-#     try:
-#         data_service = DataService(session=session, settting=settings)
-
-#         scheduler.add_job(
-#             data_service.fetch_and_merge,
-#             "interval",
-#             seconds=get_settings().FETCH_INTERVAL_SECONDS,
-#             max_instances=1,
-#             next_run_time=datetime.now(),
-#         )
-#     except Exception as e:
-#         raise e
-#     finally:
-#         await session_gen.aclose()
-
-#     return scheduler
+logger = logging.getLogger(__name__)
 
 
 async def setup_scheduler(loop: asyncio.AbstractEventLoop):
@@ -57,19 +35,26 @@ async def setup_scheduler(loop: asyncio.AbstractEventLoop):
     session_gen = get_session()
     session = await anext(session_gen)
 
+    logger.info("🗓️ Setting up scheduler...")
+
     try:
         data_service = DataService(session=session, settting=settings)
+        interval = settings.FETCH_INTERVAL_SECONDS
 
         scheduler.add_job(
             data_service.fetch_and_merge,
             "interval",
-            seconds=get_settings().FETCH_INTERVAL_SECONDS,
+            seconds=interval,
             max_instances=1,
             next_run_time=datetime.now(),
         )
+
+        logger.info(f"✅ Scheduled 'fetch_and_merge' to run every {interval} seconds.")
     except Exception as e:
+        logger.exception("❌ Failed to set up scheduler.")
         raise e
     finally:
         await session_gen.aclose()
+        logger.info("🔒 Scheduler DB session closed.")
 
     return scheduler

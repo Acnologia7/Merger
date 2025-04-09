@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Dict, List, Literal, Optional
-from pydantic import Field, RootModel, BaseModel
+from pydantic import ConfigDict, Field, RootModel, BaseModel, field_serializer
 
 
 # -----------------------
@@ -44,7 +44,6 @@ class DataCResponse(BaseModel):
     lastUpdate: datetime
     products: Optional[List[Dict[str, str]]] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    @field_serializer("lastUpdate")
+    def serialize_datetimes(self, value: datetime, _info):
+        return value.isoformat()

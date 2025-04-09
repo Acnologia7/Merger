@@ -1,20 +1,9 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
+import logging
 
-
-# async def generic_exception_handler(request: Request, exc: Exception):
-#     return JSONResponse(
-#         status_code=500,
-#         content={"message": "Unexpected server error, please contact support."},
-#     )
-
-
-# async def sql_exception_handler(request: Request, exc: SQLAlchemyError):
-#     return JSONResponse(
-#         status_code=500,
-#         content={"message": "Unexpected server error, please contact support."},
-#     )
+logger = logging.getLogger(__name__)
 
 
 async def generic_exception_handler(request: Request, exc: Exception):
@@ -31,6 +20,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     Returns:
         JSONResponse: A JSON response with a 500 status code and a generic error message.
     """
+    logger.exception(f"❌ Unhandled exception at {request.url.path}: {exc}")
     return JSONResponse(
         status_code=500,
         content={"message": "Unexpected server error, please contact support."},
@@ -51,6 +41,7 @@ async def sql_exception_handler(request: Request, exc: SQLAlchemyError):
     Returns:
         JSONResponse: A JSON response with a 500 status code and a generic error message.
     """
+    logger.exception(f"💥 SQLAlchemy error at {request.url.path}: {exc}")
     return JSONResponse(
         status_code=500,
         content={"message": "Unexpected server error, please contact support."},

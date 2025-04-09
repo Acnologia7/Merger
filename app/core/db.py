@@ -1,47 +1,18 @@
-# from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-# from sqlalchemy.orm import sessionmaker
-# from app.models import Base
-# from app.core.config import get_settings
-# from typing import Any, AsyncGenerator
-
-
-# engine = create_async_engine(
-#     get_settings().DATABASE_URL,
-#     echo=False,
-#     future=True,
-# )
-# async_session: sessionmaker[AsyncSession] = sessionmaker(
-#     bind=engine, expire_on_commit=False, class_=AsyncSession
-# )
-
-
-# async def get_session() -> AsyncGenerator[AsyncSession, Any]:
-#     async with async_session() as session:
-#         yield session
-
-
-# async def init_db():
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-
-#     # This is just for simplicity but there could be a logic with checks
-#     # that will run some migration aproach like
-#     # with Alembic package to update tables based on model changes etc.
-
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from app.models.models import Base
 from app.core.config import get_settings
 from typing import Any, AsyncGenerator
+import logging
 
-# Create an asynchronous database engine using the DATABASE_URL from settings.
+logger = logging.getLogger(__name__)
+
 engine = create_async_engine(
     get_settings().DATABASE_URL,
     echo=False,
     future=True,
 )
 
-# Create a sessionmaker bound to the asynchronous engine for creating AsyncSession instances.
 async_session: sessionmaker[AsyncSession] = sessionmaker(
     bind=engine, expire_on_commit=False, class_=AsyncSession
 )
@@ -57,8 +28,12 @@ async def get_session() -> AsyncGenerator[AsyncSession, Any]:
     Returns:
         AsyncGenerator[AsyncSession, Any]: An asynchronous session generator.
     """
+    logger.debug("🔌 Creating new database session.")
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            logger.debug("🔒 Database session closed.")
 
 
 async def init_db():
@@ -73,7 +48,10 @@ async def init_db():
         This is a simple initialization; more complex migration strategies can be implemented
         for production scenarios.
     """
+    logger.info("🛠️ Initializing database and creating tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    logger.info("✅ Database schema initialized.")
 
-    # Placeholder for migration logic, e.g., Alembic
+
+# Posibility to implement sophisticated way for migration logic, e.g., Alembic
